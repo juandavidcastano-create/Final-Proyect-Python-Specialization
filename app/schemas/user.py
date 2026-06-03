@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pydantic import BaseModel, EmailStr, model_validator
 
 class UserLogin(BaseModel):
@@ -18,11 +16,6 @@ class UserCreate(BaseModel):
         if password != repeated_password:
             raise ValueError("Passwords do not match")
         return values
-
-class UserUpdate(BaseModel):
-    email: Optional[EmailStr] = None
-    password: Optional[str] = None
-
 
 class UserResponse(BaseModel):
     id: int
