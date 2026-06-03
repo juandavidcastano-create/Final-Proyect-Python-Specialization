@@ -1,19 +1,23 @@
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, model_validator
 
-class userlogin(BaseModel):
+class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-#to-do - pasar la validación de data a schemas, para que el servicio solo se encargue de la lógica de
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
     repeated_password: str
-    def validate_passwords(self):
-        if self.password != self.repeated_password:
+
+    @model_validator(mode="after")
+    def validate_passwords(cls, values):
+        password = values.password
+        repeated_password = values.repeated_password
+        if password != repeated_password:
             raise ValueError("Passwords do not match")
+        return values
 
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None

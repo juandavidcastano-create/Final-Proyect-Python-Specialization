@@ -19,27 +19,19 @@ class UserService:
         return self.repository.get_user_by_id(user_id)
 
     def create_user(self, user_create: UserCreate):
-        # Ensure repeated password matches
-        if user_create.password != user_create.repeated_password:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Passwords do not match",
-            )
-
         if self.repository.get_user_by_email(user_create.email):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered",
             )
 
-        # Hash the confirmed password and persist only the hashed value
         hashed_password = hash_password(user_create.password)
         return self.repository.create_user(
             email=user_create.email,
             hashed_password=hashed_password,
         )
 
-    def login(self, email: str, password: str) -> str:
+    def login(self, email: str, password: str) -> dict:
         """Verify email and password, return JWT token on success."""
         user = self.repository.get_user_by_email(email)
         if not user or not verify_password(password, user.hashed_password):
@@ -51,7 +43,7 @@ class UserService:
 
         token_data = {"sub": user.email, "user_id": user.id}
         access_token = create_access_token(token_data)
-        return access_token
+        return {"access_token": access_token, "token_type": "bearer"}
 
     def say_hello(self, token: str) -> None:
         """Print greeting to console only if token is valid."""

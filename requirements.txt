@@ -10,3 +10,4 @@ python-multipart
 pyjwt
 auth0-fastapi
 itsdangerous
+python-jose
