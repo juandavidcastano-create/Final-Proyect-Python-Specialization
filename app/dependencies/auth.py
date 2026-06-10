@@ -1,6 +1,5 @@
 from datetime import timedelta, datetime, timezone
 import os
-from typing import Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -15,7 +14,6 @@ load_dotenv()
 
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
-# JWT configuration
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
@@ -39,7 +37,9 @@ def decode_access_token(token: str) -> dict:
 		raise
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_current_user(
+		token: str = Depends(oauth2_scheme),
+		db: Session = Depends(get_db)):
 	try:
 		payload = decode_access_token(token)
 		user_id = payload.get("user_id")
@@ -52,13 +52,5 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 			headers={"WWW-Authenticate": "Bearer"},
 		)
 
-	user = UserRepository(db).get_user_by_id(user_id)
-	if not user:
-		raise HTTPException(
-			status_code=status.HTTP_401_UNAUTHORIZED,
-			detail="User not found",
-			headers={"WWW-Authenticate": "Bearer"},
-		)
-
-	return user
+	return UserRepository(db).get_user_by_id(user_id)
 

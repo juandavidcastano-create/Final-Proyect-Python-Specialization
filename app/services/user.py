@@ -1,10 +1,8 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.db.database import get_db
 from app.repository.user import UserRepository
 from app.security.password import hash_password, verify_password
-from app.dependencies.auth import create_access_token, decode_access_token
 from app.schemas.user import UserCreate
 
 
@@ -18,6 +16,8 @@ class UserService:
     def get_user(self, user_id: int):
         return self.repository.get_user_by_id(user_id)
 
+    #todo: Change exception user already exists
+    #No usar exception https.
     def create_user(self, user_create: UserCreate):
         if self.repository.get_user_by_email(user_create.email):
             raise HTTPException(
@@ -33,6 +33,8 @@ class UserService:
 
     def login(self, email: str, password: str) -> dict:
         """Verify email and password, return JWT token on success."""
+        from app.dependencies.auth import create_access_token
+
         user = self.repository.get_user_by_email(email)
         if not user or not verify_password(password, user.hashed_password):
             raise HTTPException(
@@ -47,6 +49,8 @@ class UserService:
 
     def say_hello(self, token: str) -> None:
         """Print greeting to console only if token is valid."""
+        from app.dependencies.auth import decode_access_token
+
         try:
             payload = decode_access_token(token)
         except Exception:
@@ -58,9 +62,3 @@ class UserService:
 
         # Token is valid
         print("hola estoy loggeado")
-
-
-
-def get_user_service(db: Session = Depends(get_db)) -> UserService:
-    repository = UserRepository(db)
-    return UserService(repository)

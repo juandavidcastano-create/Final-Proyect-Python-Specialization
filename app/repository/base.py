@@ -15,15 +15,35 @@ class BaseRepository(Generic[ModelType]):
 
     def create(self, **kwargs) -> ModelType:
         instance = self.model(**kwargs)
+        return self.save(instance)
+
+    def add(self, instance: ModelType) -> None:
+        """Add an instance to the session (no commit)."""
         self.db.add(instance)
+
+    def commit(self) -> None:
+        """Commit the current transaction."""
         self.db.commit()
+
+    def refresh(self, instance: ModelType) -> None:
+        """Refresh an instance from the database."""
         self.db.refresh(instance)
+
+    def save(self, instance: ModelType) -> ModelType:
+        """Add, commit and refresh an instance, returning it."""
+        self.add(instance)
+        self.commit()
+        self.refresh(instance)
         return instance
 
     def delete_by_id(self, object_id: int):
         instance = self.get_by_id(object_id)
         if not instance:
             return None
-        self.db.delete(instance)
-        self.db.commit()
+        self.delete(instance)
+        self.commit()
         return instance
+
+    def delete(self, instance: ModelType) -> None:
+        """Delete an instance from the session."""
+        self.db.delete(instance)

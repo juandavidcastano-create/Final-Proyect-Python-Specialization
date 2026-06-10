@@ -1,21 +1,12 @@
-from typing import List
-
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Query
 
 from app.dependencies.auth import get_current_user
+from app.dependencies.project import get_project_service
 from app.models.user import User
 from app.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
-from app.services.project import ProjectService, get_project_service
+from app.services.project import ProjectService
 
 router = APIRouter(prefix="/projects", tags=["projects"])
-
-@router.get("/", response_model=List[ProjectResponse], summary="Listar proyectos de un usuario")
-def list_projects_by_user(
-    current_user: User = Depends(get_current_user),
-    project_service: ProjectService = Depends(get_project_service),
-):
-    """Listar todos los proyectos asociados a un usuario."""
-    return project_service.list_projects_by_user(current_user.id)
 
 @router.post("/create-project", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED, summary="Crear proyecto")
 def create_project(
@@ -26,6 +17,25 @@ def create_project(
     """Crear un nuevo proyecto."""
     return project_service.create_project(project, current_user.id)
 
+
+@router.get("/", response_model=list[ProjectResponse], summary="Listar proyectos de un usuario")
+def list_projects_by_user(
+    current_user: User = Depends(get_current_user),
+    project_service: ProjectService = Depends(get_project_service),
+):
+    """Listar todos los proyectos asociados a un usuario."""
+    return project_service.list_projects_by_user(current_user.id)
+
+@router.get("/{project_id}/info", response_model=ProjectResponse, summary="Obtener detalles del proyecto")
+def get_project_info(
+    project_id: int,
+    current_user: User = Depends(get_current_user),
+    project_service: ProjectService = Depends(get_project_service),
+):
+    """Obtener los detalles de un proyecto si el usuario tiene acceso."""
+    return project_service.get_project_info(project_id, current_user.id)
+
+
 @router.put("/{project_id}", response_model=ProjectResponse, summary="Actualizar proyecto")
 def update_project(
     project_id: int,
@@ -33,7 +43,7 @@ def update_project(
     current_user: User = Depends(get_current_user),
     project_service: ProjectService = Depends(get_project_service),
 ):
-    """Actualizar un proyecto solo si el usuario es owner."""
+    """Actualizar un proyecto solo si el usuario tiene acceso"""
     return project_service.update_project(project_id, project_update, current_user.id)
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar proyecto")
@@ -45,5 +55,18 @@ def delete_project(
     """Eliminar un proyecto solo si el usuario es owner."""
     project_service.delete_project(project_id, current_user.id)
     return None
+
+@router.post("/{project_id}/invite/", response_model=ProjectResponse, summary="Invitar usuario al proyecto")
+def add_collaborator(
+    project_id: int,
+    user: str = Query(..., description="Email del usuario a invitar"),
+    current_user: User = Depends(get_current_user),
+    project_service: ProjectService = Depends(get_project_service),
+):
+    """Grant access to the project for a specific user.
+
+    Only the project owner can invite. Granting access assigns the "collaborator" role.
+    """
+    return project_service.add_collaborator(project_id, user, current_user.id)
 
 
