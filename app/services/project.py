@@ -1,27 +1,54 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+from pathlib import Path
+import shutil
 
 from app.schemas.project import ProjectCreate, ProjectUpdate
 from app.repository.project import ProjectRepository
 from app.models.user_project import UserProject
-from app.db.database import get_db
 
 class ProjectService:
     def __init__(self, project_repository: ProjectRepository, db: Session = None):
         self.project_repository = project_repository
         self.db = db
     
-    def _verify_project_owner(self, project_id: int, user_id: int) -> bool:
-        """Verifica si el usuario es owner del proyecto."""
+    def verify_project_owner(self, project_id: int, user_id: int, raise_on_error: bool = True):
+        """Verifica si el usuario es owner del proyecto.
+
+        Si `raise_on_error` es True lanza HTTPException en caso de no existir el proyecto
+        o de no ser owner. Si es False, devuelve False en esos casos.
+        """
         if not self.db:
+            if raise_on_error:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only project owner can perform this action",
+                )
             return False
-        
+
+        project = self.project_repository.get_project_by_id(project_id)
+        if not project:
+            if raise_on_error:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Project not found",
+                )
+            return False
+
         user_project = self.db.query(UserProject).filter(
             UserProject.project_id == project_id,
             UserProject.user_id == user_id,
-            UserProject.role == "owner"
+            UserProject.role == "owner",
         ).first()
-        return user_project is not None
+        if not user_project:
+            if raise_on_error:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only project owner can perform this action",
+                )
+            return False
+
+        return project if raise_on_error else True
 
     def _verify_project_access(self, project_id: int, user_id: int) -> bool:
         """Verifica si el usuario tiene acceso al proyecto (owner o collaborator)."""
@@ -67,12 +94,34 @@ class ProjectService:
         return self._serialize_project(project, user_id)
 
     def delete_project(self, project_id: int, user_id: int):
-        if not self._verify_project_owner(project_id, user_id):
+        if not self.verify_project_owner(project_id, user_id, raise_on_error=False):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only project owner can delete this project"
             )
+
+        self._delete_project_storage_folder(user_id, project_id)
+        self._delete_project_documents_from_db(project_id)
+
         return self.project_repository.delete_project(project_id)
+
+    def _delete_project_storage_folder(self, owner_id: int, project_id: int):
+        storage_root = Path(r"C:\Users\juand\Documents\epam_final_project") / "uploaded_documents"
+        project_folder = storage_root / str(owner_id) / str(project_id)
+        if project_folder.exists() and project_folder.is_dir():
+            try:
+                shutil.rmtree(project_folder)
+            except OSError as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Failed to delete project document folder: {exc}",
+                )
+
+    def _delete_project_documents_from_db(self, project_id: int):
+        from app.repository.document import DocumentRepository
+
+        document_repository = DocumentRepository(self.db)
+        document_repository.delete_documents_by_project(project_id)
 
     def list_projects_by_user(self, user_id: int):
         projects = self.project_repository.list_projects_by_user(user_id)
@@ -96,7 +145,7 @@ class ProjectService:
         return self._serialize_project(project, user_id)
     
     def add_collaborator(self, project_id: int, collaborator_email: str, user_id: int):
-        if not self._verify_project_owner(project_id, user_id):
+        if not self.verify_project_owner(project_id, user_id, raise_on_error=False):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only project owner can add collaborators"

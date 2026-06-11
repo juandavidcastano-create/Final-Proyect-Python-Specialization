@@ -59,7 +59,7 @@ def delete_project(
 @router.post("/{project_id}/invite/", response_model=ProjectResponse, summary="Invitar usuario al proyecto")
 def add_collaborator(
     project_id: int,
-    user: str = Query(..., description="Email del usuario a invitar"),
+    user: str = Query(..., description="Email invitado"),
     current_user: User = Depends(get_current_user),
     project_service: ProjectService = Depends(get_project_service),
 ):
