@@ -17,7 +17,7 @@ def attach_document_to_project(
     project_id: int,
     file: UploadFile = File(...),
     document_service=Depends(get_document_service),
-    project_service: ProjectService = Depends(get_project_service),
+    project_service = Depends(get_project_service),
     current_user=Depends(get_current_user),
 ):
     # Verificar acceso a proyecto (owner o colaborador)
@@ -36,7 +36,7 @@ def attach_document_to_project(
 def download_document(
     document_id: int,
     document_service=Depends(get_document_service),
-    project_service: ProjectService = Depends(get_project_service),
+    project_service= Depends(get_project_service),
     current_user=Depends(get_current_user),
 ):
     document = document_service.get_document_by_id(document_id)
@@ -58,7 +58,7 @@ def update_document(
     document_id: int,
     file: UploadFile = File(...),
     document_service=Depends(get_document_service),
-    project_service: ProjectService = Depends(get_project_service),
+    project_service=Depends(get_project_service),
     current_user=Depends(get_current_user),
 ):
     document = document_service.get_document_by_id(document_id)
@@ -85,7 +85,7 @@ def update_document(
 def delete_document(
     document_id: int,
     document_service=Depends(get_document_service),
-    project_service: ProjectService = Depends(get_project_service),
+    project_service=Depends(get_project_service),
     current_user=Depends(get_current_user),
 ):
     document = document_service.get_document_by_id(document_id)
@@ -103,4 +103,16 @@ def delete_document(
             detail=str(exc)
         )
     return None
+
+@router.get("/projects/{project_id}/documents", status_code=status.HTTP_200_OK, response_model=list[DocumentResponse])
+def list_project_documents(
+    project_id: int,
+    document_service=Depends(get_document_service),
+    project_service=Depends(get_project_service),
+    current_user=Depends(get_current_user),
+):
+    # Verificar acceso a proyecto (owner o colaborador)
+    project_service.get_project_info(project_id, current_user.id)
+
+    return document_service.list_documents_by_project(project_id)
 

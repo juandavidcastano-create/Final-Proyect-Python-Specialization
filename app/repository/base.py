@@ -47,3 +47,4 @@ class BaseRepository(Generic[ModelType]):
     def delete(self, instance: ModelType) -> None:
         """Delete an instance from the session."""
         self.db.delete(instance)
+        self.commit()
