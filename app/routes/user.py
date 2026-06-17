@@ -3,8 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 
 from fastapi import APIRouter, Depends
 
-from app.schemas.user import *
-from app.security import password
+from app.schemas.user import UserCreate, UserLogin, UserResponse
 from app.services.user import UserService
 from app.dependencies.user import get_user_service
 

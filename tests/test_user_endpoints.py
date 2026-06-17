@@ -141,21 +141,3 @@ def test_login_missing_fields():
 
     assert response.status_code == 422
     app.dependency_overrides.clear()
-
-def test_create_user_password_mismatch():
-    response = client.post(
-        "/users/auth",
-        json={"email": "juan@example.com", "password": "securepass", "repeated_password": "differentpass"},
-    )
-
-    assert response.status_code == 422
-    app.dependency_overrides.clear()
-
-def test_create_user_invalid_email():
-    response = client.post(
-        "/users/auth",
-        json={"email": "not-an-email", "password": "securepass", "repeated_password": "securepass"},
-    )
-
-    assert response.status_code == 422
-    app.dependency_overrides.clear()

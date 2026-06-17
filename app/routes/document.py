@@ -1,13 +1,10 @@
 from fastapi import APIRouter, Depends, File, UploadFile, status, HTTPException
 from fastapi.responses import FileResponse
-from pathlib import Path
-import os
 
 from app.dependencies.auth import get_current_user
 from app.dependencies.document import get_document_service
 from app.dependencies.project import get_project_service
 from app.schemas.document import DocumentResponse
-from app.services.project import ProjectService
 
 router = APIRouter(tags=["documents"])
 
@@ -25,7 +22,7 @@ def attach_document_to_project(
 
     try:
         return document_service.create_document_from_upload(file, project_id, current_user.id)
-    except ValueError as exc:
+    except ValueError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="A document with the same name already exists in this project"
@@ -71,7 +68,7 @@ def update_document(
     # Eliminar el archivo anterior usando el servicio
     try:
         document_service.delete_document_file(document_id)
-    except ValueError as exc:
+    except ValueError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete the existing document file"

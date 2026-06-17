@@ -1,6 +1,6 @@
 from datetime import date
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel
 
 class ProjectCreate(BaseModel):
     name: str

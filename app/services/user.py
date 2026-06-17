@@ -1,5 +1,4 @@
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
 
 from app.repository.user import UserRepository
 from app.security.password import hash_password, verify_password
@@ -52,7 +51,7 @@ class UserService:
         from app.dependencies.auth import decode_access_token
 
         try:
-            payload = decode_access_token(token)
+            decode_access_token(token)
         except Exception:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

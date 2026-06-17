@@ -1,5 +1,5 @@
-import app.dependencies.auth
-import app.dependencies.project
-import app.dependencies.user
+import app.dependencies.auth as auth
+import app.dependencies.project as project
+import app.dependencies.user as user
 
-__all__ = ["project"]
+__all__ = ["auth", "project", "user"]
