@@ -1,0 +1,17 @@
+# Python bytecode cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+
+# Editor files
+*.swp
+*.swo
+*.idea/
+.vscode/
+
+#local environment variables
+.env
