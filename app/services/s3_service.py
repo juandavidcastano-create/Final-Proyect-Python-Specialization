@@ -1,7 +1,6 @@
 import os
 import boto3
 from botocore.exceptions import ClientError
-from io import BytesIO
 
 
 class S3Service:

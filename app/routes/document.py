@@ -5,7 +5,6 @@ from app.dependencies.auth import get_current_user
 from app.dependencies.document import get_document_service
 from app.dependencies.project import get_project_service
 from app.schemas.document import DocumentResponse
-from io import BytesIO
 
 router = APIRouter(tags=["documents"])
 

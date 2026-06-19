@@ -1,7 +1,6 @@
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
 from app.services.s3_service import S3Service
-from app.repository.document import DocumentRepository
 
 class DocumentService:
     def __init__(self,document_repository,db: Session = None):
