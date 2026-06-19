@@ -3,6 +3,10 @@ from fastapi import FastAPI
 from app.routes.user import router as user_router
 from app.routes.project import router as project_router
 from app.routes.document import router as document_router
+from app.db.database import engine, Base
+from app.models import User, Project, Document, UserProject  # noqa: F401
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Project Dashboard API")
 

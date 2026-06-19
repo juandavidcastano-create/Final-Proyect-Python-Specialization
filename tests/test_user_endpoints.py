@@ -116,7 +116,7 @@ def test_create_user_password_mismatch():
 
     assert response.status_code == 422
     assert any(
-        detail.get("msg") == "Passwords do not match"
+        detail.get("msg") == "Value error, Passwords do not match"
         for detail in response.json()["detail"]
     )
 
@@ -129,7 +129,7 @@ def test_create_user_invalid_email():
 
     assert response.status_code == 422
     assert any(
-        detail.get("type") == "value_error.email"
+        detail.get("loc") == ["body", "email"] and "valid email address" in detail.get("msg", "")
         for detail in response.json()["detail"]
     )
 

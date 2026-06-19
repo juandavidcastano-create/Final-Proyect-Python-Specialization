@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, File, UploadFile, status, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse
 
 from app.dependencies.auth import get_current_user
 from app.dependencies.document import get_document_service
@@ -29,7 +29,7 @@ def attach_document_to_project(
         )
 
 
-@router.get("/document/{document_id}", status_code=status.HTTP_200_OK, response_model=DocumentResponse)
+@router.get("/document/{document_id}", status_code=status.HTTP_200_OK)
 def download_document(
     document_id: int,
     document_service=Depends(get_document_service),
@@ -43,12 +43,18 @@ def download_document(
     # Verificar que el usuario tiene acceso al proyecto
     project_service.get_project_info(document.project_id, current_user.id)
 
-    # Obtener ruta al archivo desde el servicio y retornarlo
-    file_path = document_service.get_document_file_path(document_id)
-    if not file_path or not file_path.exists():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document file not found")
+    # Obtener archivo de S3
+    try:
+        file_content = document_service.get_document_file_content(document_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document file not found in S3")
 
-    return FileResponse(path=str(file_path), filename=document.file_name)
+    # Retornar como streaming response
+    return StreamingResponse(
+        iter([file_content]),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f"attachment; filename={document.file_name}"}
+    )
 
 @router.put("/document/{document_id}", status_code=status.HTTP_201_CREATED, response_model=DocumentResponse)
 def update_document(
@@ -112,4 +118,5 @@ def list_project_documents(
     project_service.get_project_info(project_id, current_user.id)
 
     return document_service.list_documents_by_project(project_id)
+
 

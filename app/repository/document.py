@@ -7,10 +7,10 @@ class DocumentRepository(BaseRepository):
         from app.models.document import Document
         super().__init__(db, Document)
 
-    def create_document(self, file_name: str, dir: str, size: int, project_id: int):
+    def create_document(self, file_name: str, s3_key: str, size: int, project_id: int):
         return super().create(
             file_name=file_name,
-            dir=dir,
+            s3_key=s3_key,
             size=size,
             project_id=project_id
         )
@@ -28,3 +28,9 @@ class DocumentRepository(BaseRepository):
         deleted_count = self.db.query(self.model).filter(self.model.project_id == project_id).delete(synchronize_session=False)
         self.db.commit()
         return deleted_count
+
+    def get_document_by_name_and_project(self, file_name: str, project_id: int):
+        return self.db.query(self.model).filter(
+        self.model.file_name == file_name,
+        self.model.project_id == project_id
+    ).first()
