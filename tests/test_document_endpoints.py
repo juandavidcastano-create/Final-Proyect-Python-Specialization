@@ -34,6 +34,23 @@ class DummyDocumentService:
             raise self._exception
         return self._file_path
 
+    def get_document_file_content(self, document_id):
+        if self._exception:
+            raise self._exception
+        if self._file_path is None:
+            raise ValueError("Document file not found")
+
+        if hasattr(self._file_path, "read_bytes"):
+            if not self._file_path.exists():
+                raise ValueError("Document file not found")
+            return self._file_path.read_bytes()
+
+        if not Path(self._file_path).exists():
+            raise ValueError("Document file not found")
+
+        with open(self._file_path, "rb") as f:
+            return f.read()
+
     def delete_document_file(self, document_id):
         if self._exception:
             raise self._exception
@@ -84,7 +101,7 @@ def test_attach_document_to_project_success():
         DummyDocumentService(result={
             "id": 1,
             "file_name": "example.txt",
-            "dir": "C:\\temp",
+            "s3_key": "projects/1/example.txt",
             "size": 11,
             "project_id": 1,
         }),
@@ -99,7 +116,7 @@ def test_attach_document_to_project_success():
     assert response.json() == {
         "id": 1,
         "file_name": "example.txt",
-        "dir": "C:\\temp",
+        "s3_key": "projects/1/example.txt",
         "size": 11,
         "project_id": 1,
     }
@@ -161,7 +178,7 @@ def test_update_document_success():
         DummyDocumentService(result={
             "id": 1,
             "file_name": "updated_example.txt",
-            "dir": "C:\\temp",
+            "s3_key": "projects/1/updated_example.txt",
             "size": 12,
             "project_id": 1,
         }, document=document),
@@ -176,7 +193,7 @@ def test_update_document_success():
     assert response.json() == {
         "id": 1,
         "file_name": "updated_example.txt",
-        "dir": "C:\\temp",
+        "s3_key": "projects/1/updated_example.txt",
         "size": 12,
         "project_id": 1,
     }
@@ -225,7 +242,7 @@ def test_list_project_documents_success():
     app.dependency_overrides[get_document_service] = override_dependency(
         get_document_service,
         DummyDocumentService(result=[
-            {"id": 1, "file_name": "example.txt", "dir": "C:\\temp", "size": 11, "project_id": 1}
+            {"id": 1, "file_name": "example.txt", "s3_key": "projects/1/example.txt", "size": 11, "project_id": 1}
         ]),
     )
 
@@ -233,7 +250,7 @@ def test_list_project_documents_success():
 
     assert response.status_code == 200
     assert response.json() == [
-        {"id": 1, "file_name": "example.txt", "dir": "C:\\temp", "size": 11, "project_id": 1}
+        {"id": 1, "file_name": "example.txt", "s3_key": "projects/1/example.txt", "size": 11, "project_id": 1}
     ]
 
     app.dependency_overrides.clear()
@@ -305,7 +322,7 @@ def test_download_document_file_missing():
     response = client.get("/document/1")
 
     assert response.status_code == 404
-    assert response.json() == {"detail": "Document file not found"}
+    assert response.json() == {"detail": "Document file not found in S3"}
 
     app.dependency_overrides.clear()
 
