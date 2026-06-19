@@ -48,3 +48,4 @@ class BaseRepository(Generic[ModelType]):
         """Delete an instance from the session."""
         self.db.delete(instance)
         self.commit()
+
