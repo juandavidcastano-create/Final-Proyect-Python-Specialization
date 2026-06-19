@@ -4,10 +4,22 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
 import os
-from dotenv import load_dotenv
+import sys
+from dotenv import load_dotenv, find_dotenv
 
-# Load environment variables
-load_dotenv()
+# Ensure repository root is on Python path so `app` imports resolve
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+# Load environment variables from the nearest .env file in the repo tree
+dotenv_path = find_dotenv()
+if dotenv_path:
+    load_dotenv(dotenv_path)
+
+# Helper to treat unset, empty, or literal 'None' values as missing
+
+def _env_or_default(name: str, default: str) -> str:
+    value = os.getenv(name)
+    return default if value is None or value.strip() == "" or value.strip().lower() == "none" else value
 
 # this is the Alembic Config object, which provides
 # the values of the alembic.ini file, and in addition
@@ -21,13 +33,20 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Override the sqlalchemy.url with environment variables if available
-db_user = os.getenv("DB_USER", "postgres")
-db_password = os.getenv("DB_PASSWORD", "postgres")
-db_host = os.getenv("DB_HOST", "localhost")
-db_port = os.getenv("DB_PORT", "5432")
-db_name = os.getenv("DB_NAME", "project_db")
+# and treat literal 'None' values as missing.
+db_user = _env_or_default("DB_USER", "postgres")
+db_password = _env_or_default("DB_PASSWORD", "postgres")
+db_host = _env_or_default("DB_HOST", "localhost")
+db_port = _env_or_default("DB_PORT", "5432")
+db_name = _env_or_default("DB_NAME", "project_db")
 
-database_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+# Prefer an explicit DATABASE_URL when provided, otherwise build from DB_* values.
+raw_database_url = os.getenv("DATABASE_URL")
+if raw_database_url is not None and raw_database_url.strip().lower() != "none":
+    database_url = raw_database_url
+else:
+    database_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+
 config.set_main_option("sqlalchemy.url", database_url)
 
 # Get the target metadata for autogenerate support
