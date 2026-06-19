@@ -12,3 +12,4 @@ python-jose
 pytest-cov
 boto3
 Pillow
+httpx>=0.23.0
